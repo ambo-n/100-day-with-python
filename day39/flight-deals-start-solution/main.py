@@ -14,6 +14,10 @@ sheet_data = dm.get_destination_data()
 notification_manager = NotificationManager()
 
 ORIGIN_CITY_DATA = "LON"
+
+# ==================== Retrieve Customer emails ====================
+users_data = dm.get_customer_emails()
+email_list =[row["whatIsYourEmail?"] for row in users_data]
 # ==================== Update the Airport Codes in Google Sheet ====================
 for row in sheet_data:
     if not row['iataCode']:
@@ -33,7 +37,19 @@ for destination in sheet_data:
         to_time=six_month_from_today
     )
     cheapest_flight = find_cheapest_flight(flights)
-    print(f"{destination['city']}: £{cheapest_flight.price}")
+    print(f"{destination['city']}: £{cheapest_flight.price} with {cheapest_flight.stops} stop")
+
+    if cheapest_flight.price == "N/A":
+        print(f"No direct flight to {destination['city']}. Looking for indirect flights....")
+        stopover_flights = flight_search.check_flights(
+            origin_city_code=ORIGIN_CITY_DATA,
+            destination_city_code=destination['iataCode'],
+            from_time=tomorrow,
+            to_time=six_month_from_today,
+            is_direct=False
+        )
+        cheapest_flight = find_cheapest_flight(stopover_flights)
+        print(f"Cheapest indirect flight to {destination['city']}: £{cheapest_flight.price} with {cheapest_flight.stops} stop/s")
     if cheapest_flight.price != "N/A" and cheapest_flight.price < destination["lowestPrice"]:
         print(f"Lower price flight found to {destination['city']}!")
         notification_manager.send_sms(
@@ -41,3 +57,18 @@ for destination in sheet_data:
                           f"from {cheapest_flight.origin_airport} to {cheapest_flight.destination_airport}, "
                           f"on {cheapest_flight.out_date} until {cheapest_flight.return_date}."
         )
+        if cheapest_flight.stops == 0:
+            message = f"Low price alert! Only GBP {cheapest_flight.price} to fly direct "\
+                      f"from {cheapest_flight.origin_airport} to {cheapest_flight.destination_airport}, "\
+                      f"on {cheapest_flight.out_date} until {cheapest_flight.return_date}."
+        else:
+            message = f"Low price alert! Only GBP {cheapest_flight.price} to fly "\
+                      f"from {cheapest_flight.origin_airport} to {cheapest_flight.destination_airport}, "\
+                      f"with {cheapest_flight.stops} stop(s) "\
+                      f"departing on {cheapest_flight.out_date} and returning on {cheapest_flight.return_date}."
+        notification_manager.send_emails(email_list=email_list, email_body=message)
+
+
+
+
+

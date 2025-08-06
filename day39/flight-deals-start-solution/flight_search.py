@@ -9,7 +9,7 @@ FLIGHT_OFFER_ENDPOINT="https://test.api.amadeus.com/v2/shopping/flight-offers"
 
 class FlightSearch:
     def __init__(self) -> None:
-        self._api_key = os.getenv("AM""ADEUS_API_KEY")
+        self._api_key = os.getenv("AMADEUS_API_KEY")
         self._api_secret = os.getenv("AMADEUS_API_SECRET")
         self._token = self._get_new_token()
     
@@ -67,7 +67,7 @@ class FlightSearch:
         else:
             return code
     
-    def check_flights(self, origin_city_code, destination_city_code, from_time, to_time):
+    def check_flights(self, origin_city_code, destination_city_code, from_time, to_time, is_direct=True):
         """
         Searches for flight options between two cities on specified departure and return dated using
         the Amadues API.
@@ -91,15 +91,15 @@ class FlightSearch:
             "Authorization": f"Bearer {self._token}"
         }
         query = {
-            "originLocationCode": origin_city_code,
-            "destinationLocationCode": destination_city_code,
-            "departureDate": from_time.strftime("%Y-%m-%d"),
-            "returnDate": to_time.strftime("%Y-%m-%d"),
-            "adults": 1,
-            "nonStop": "true",
-            "currencyCode": "GBP",
-            "max": "10",
-        }
+                "originLocationCode": origin_city_code,
+                "destinationLocationCode": destination_city_code,
+                "departureDate": from_time.strftime("%Y-%m-%d"),
+                "returnDate": to_time.strftime("%Y-%m-%d"),
+                "adults": 1,
+                "nonStop": "true" if is_direct else "false",
+                "currencyCode": "GBP",
+                "max": "10",
+            }
         response = requests.get(url=FLIGHT_OFFER_ENDPOINT, headers=headers, params=query)
         if response.status_code !=200:
             print(f"check_flight() response code: {response.status_code}")
@@ -110,6 +110,4 @@ class FlightSearch:
             print("Response body:", response.text)
             return None
         return response.json()
-
-
-
+    
