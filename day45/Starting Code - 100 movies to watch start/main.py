@@ -11,8 +11,7 @@ soup = BeautifulSoup(response.text,'html.parser')
 movie_titles = soup.find_all("h3", class_="title")
 
 with open("movies.txt",mode="w") as file:
-    for n, title in enumerate(reversed(movie_titles), start=1):
-        parts= title.get_text().split()[1:]
-        movie_name= " ".join(parts)
-        file.write(f"{n}){movie_name}\n")
+    for title in movie_titles[::-1]:
+        movie_name = title.get_text()
+        file.write(f"{movie_name}\n")
 
